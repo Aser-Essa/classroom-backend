@@ -17,16 +17,18 @@ router.get("/", async (req, res) => {
     const filterConditions = [];
 
     if (search) {
+      const deptPattern = `%${String(search).replace(/[%_]/g, "\\$&")}%`;
       filterConditions.push(
         or(
-          ilike(subjects.name, `%${search}%`),
-          ilike(subjects.code, `%${search}%`),
+          ilike(subjects.name, `%${deptPattern}%`),
+          ilike(subjects.code, `%${deptPattern}%`),
         ),
       );
     }
 
     if (department) {
-      filterConditions.push(ilike(departments.name, `%${search}%`));
+      const deptPattern = `%${String(department).replace(/[%_]/g, "\\$&")}%`;
+      filterConditions.push(ilike(departments.name, deptPattern));
     }
 
     const whereClause =
