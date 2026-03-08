@@ -1,16 +1,16 @@
 import { and, desc, eq, getTableColumns, ilike, or, sql } from "drizzle-orm";
+import express from "express";
 import { departments, subjects } from "../db/schema";
 import { db } from "../db";
-import express from "express";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, department } = req.query;
+    const { page = 1, limit = 10, department, search } = req.query;
 
-    const currentPage = Math.max(1, +page);
-    const limitPerPage = Math.max(1, +limit);
+    const currentPage = Math.max(1, Number(page) || 1);
+    const limitPerPage = Math.max(1, Number(limit) || 10);
 
     const offset = (currentPage - 1) * limitPerPage;
 
@@ -20,13 +20,13 @@ router.get("/", async (req, res) => {
       filterConditions.push(
         or(
           ilike(subjects.name, `%${search}%`),
-          ilike(subjects.name, `%${search}%`),
+          ilike(subjects.code, `%${search}%`),
         ),
       );
     }
 
     if (department) {
-      filterConditions.push(ilike(departments.name, `%${department}%`));
+      filterConditions.push(ilike(departments.name, `%${search}%`));
     }
 
     const whereClause =
@@ -43,7 +43,7 @@ router.get("/", async (req, res) => {
     const subjectsList = await db
       .select({
         ...getTableColumns(subjects),
-        department: { ...getTableColumns(departments) },
+        department: getTableColumns(departments),
       })
       .from(subjects)
       .leftJoin(departments, () => eq(subjects.departmentId, departments.id))
@@ -54,7 +54,7 @@ router.get("/", async (req, res) => {
 
     res.status(200).json({
       data: subjectsList,
-      pagenation: {
+      pagination: {
         page: currentPage,
         limit: limitPerPage,
         total: totalCount,
